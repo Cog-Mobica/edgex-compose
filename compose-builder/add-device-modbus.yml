@@ -28,6 +28,8 @@ services:
       - common-non-security.env
     environment:
       SERVICE_HOST: edgex-device-modbus
+      DEVICE_DEVICESDIR: /custom-config/modbus
+      DEVICE_PROFILESDIR: /custom-config/modbus
     depends_on:
       - consul
       - core-data
@@ -40,3 +42,4 @@ services:
     volumes:
       # use host timezone
       - /etc/localtime:/etc/localtime:ro
+      - ./custom-config/modbus:/custom-config/modbus

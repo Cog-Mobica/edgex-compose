@@ -46,7 +46,7 @@ define OPTIONS
  - nats-bus mqtt-bus mqtt-broker mqtt-verbose nanomq -
  - taf-secty taf-no-secty taf-perf taf-perf-no-secty -
  - ds-onvif-camera ds-usb-camera ds-bacnet-ip ds-bacnet-mstp ds-modbus ds-mqtt ds-rest ds-snmp ds-virtual ds-llrp -
- - ds-coap ds-gpio ds-uart -
+ - ds-coap ds-gpio ds-uart ds-opc-ua -
  - asc-http asc-mqtt asc-sample asc-metrics as-llrp as-record-replay asc-ex-mqtt -
  - modbus-sim -
 endef
@@ -88,6 +88,7 @@ ifeq (device-dev, $(filter device-dev,$(ARGS)))
 	export DEVICE_GPIO_VERSION=0.0.0-dev
 	export DEVICE_ONVIFCAM_VERSION=0.0.0-dev
 	export DEVICE_USBCAM_VERSION=0.0.0-dev
+	export DEVICE_OPCUA_VERSION=0.0.0-dev
 endif
 ifeq (ui-dev, $(filter ui-dev,$(ARGS)))
 	export UI_REPOSITORY=edgexfoundry
@@ -471,6 +472,34 @@ ifeq (ds-uart, $(filter ds-uart,$(ARGS)))
 		# add runtime token config for delayed-start if specified
 		ifeq (delayed-start, $(filter delayed-start,$(ARGS)))
 			ext_file:= $(shell GEN_EXT_DIR="$(GEN_EXT_DIR)" ./gen_runtime_token_config_compose_ext.sh device-uart)
+			COMPOSE_FILES:=$(COMPOSE_FILES) -f $(ext_file)
+		endif
+	endif
+endif
+ifeq (ds-opc-ua, $(filter ds-opc-ua,$(ARGS)))
+	COMPOSE_FILES:=$(COMPOSE_FILES) -f add-device-opc-ua.yml
+	ifneq (no-secty, $(filter no-secty,$(ARGS)))
+		ifeq ($(TOKEN_LIST),)
+			TOKEN_LIST:=device-opcua
+		else
+			TOKEN_LIST:=$(TOKEN_LIST),device-opcua
+		endif
+		ifeq ($(KNOWN_SECRETS_LIST),)
+			KNOWN_SECRETS_LIST:=redisdb[device-opcua],message-bus[device-opcua]
+		else
+			KNOWN_SECRETS_LIST:=$(KNOWN_SECRETS_LIST),redisdb[device-opcua],message-bus[device-opcua]
+		endif
+		PROXY_ROUTE:=device-opcua.http://edgex-device-opcua:59902
+		ifeq ($(EXTRA_PROXY_ROUTE_LIST),)
+			EXTRA_PROXY_ROUTE_LIST:=$(PROXY_ROUTE)
+		else
+			EXTRA_PROXY_ROUTE_LIST:=$(EXTRA_PROXY_ROUTE_LIST),$(PROXY_ROUTE)
+		endif
+		extension_file:= $(shell GEN_EXT_DIR="$(GEN_EXT_DIR)" ./gen_secure_compose_ext.sh device-opcua)
+		COMPOSE_FILES:=$(COMPOSE_FILES) -f $(extension_file)
+		# add runtime token config for delayed-start if specified
+		ifeq (delayed-start, $(filter delayed-start,$(ARGS)))
+			ext_file:= $(shell GEN_EXT_DIR="$(GEN_EXT_DIR)" ./gen_runtime_token_config_compose_ext.sh device-opcua)
 			COMPOSE_FILES:=$(COMPOSE_FILES) -f $(ext_file)
 		endif
 	endif
@@ -918,6 +947,7 @@ define COMPOSE_DOWN
 		-f add-device-uart.yml \
 		-f add-device-rfid-llrp.yml \
 		-f add-device-virtual.yml \
+		-f add-device-opc-ua.yml \
 		-f add-asc-http-export.yml \
 		-f add-asc-mqtt-export.yml \
 		-f add-asc-external-mqtt-trigger.yml \

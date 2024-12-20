@@ -16,17 +16,34 @@
 version: '3.7'
 
 services:
-  mqtt-broker:
-    image: eclipse-mosquitto:${MOSQUITTO_VERSION}
-    command: "/usr/sbin/mosquitto ${MQTT_VERBOSE} -c /mosquitto-no-auth.conf"
+#   mqtt-broker:
+#     image: eclipse-mosquitto:${MOSQUITTO_VERSION}
+#     command: "/usr/sbin/mosquitto ${MQTT_VERBOSE} -c /mosquitto-no-auth.conf"
+#     ports:
+#       - "127.0.0.1:1883:1883"
+#     container_name: edgex-mqtt-broker
+#     hostname: edgex-mqtt-broker
+#     read_only: true
+#     restart: always
+#     networks:
+#       - edgex-network
+#     security_opt:
+#       - no-new-privileges:true
+#     user: "${EDGEX_USER}:${EDGEX_GROUP}"
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mqtt-bus
     ports:
-      - "127.0.0.1:1883:1883"
-    container_name: edgex-mqtt-broker
-    hostname: edgex-mqtt-broker
-    read_only: true
-    restart: always
+      - 1883:1883
+    volumes:
+      - ./custom-config/mosquitto/config:/mosquitto/config:rw
+      - ./custom-config/mosquitto/data:/mosquitto/data:rw
+      - ./custom-config/mosquitto/log:/mosquitto/log:rw
+      - ./custom-config/certificate_files:/mosquitto/certificate_files:r
     networks:
-      - edgex-network
-    security_opt:
-      - no-new-privileges:true
-    user: "${EDGEX_USER}:${EDGEX_GROUP}"
+      - mosquitto
+    restart: unless-stopped
+networks:
+  mosquitto:
+    name: mosquitto
+    driver: bridge
