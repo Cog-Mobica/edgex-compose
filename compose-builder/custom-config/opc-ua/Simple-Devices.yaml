@@ -1,4 +1,4 @@
-eviceList:
+deviceList:
   - name: SimulationServer
     profileName: OPCUA-Server
     description: OPCUA device
